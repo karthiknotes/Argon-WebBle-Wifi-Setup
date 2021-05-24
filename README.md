@@ -11,3 +11,6 @@ WebBle webapp and firmware to set up Wifi Credentials for Particle Argon
 4. Enter your wifi ssid and password and press 'connect to wifi', to connect to your local wifi.
 
 
+This repo uses modified code from google, licenced under Apache2.0 license
+
+
