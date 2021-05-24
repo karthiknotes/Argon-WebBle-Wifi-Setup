@@ -1,0 +1,583 @@
+<!doctype html>
+
+<!--
+Copyright 2021 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Modified from the original source code by Karthik Kannappan. The orginal source code can be found at
+https://github.com/googlechrome/samples/tree/gh-pages/web-bluetooth
+
+-->
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="WebApp to set WiFi credentials to Particle Argon.">
+    <meta name="author" content ="Karthik Kannappan">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>WebApp to set Wifi Credentials for Particle Argon</title>
+    <script>
+      // Add a global error event listener early on in the page load, to help ensure that browsers
+      // which don't support specific functionality still end up displaying a meaningful message.
+      window.addEventListener('error', function(error) {
+        if (webPage && webPage.setStatus) {
+          console.error(error);
+          webPage.setStatus(error.message + ' (Your browser may not support this feature.)');
+          error.preventDefault();
+        }
+      });
+    </script>
+
+    <!-- Style sheet from Google embedded into the html file to keep it a single document. 
+        Can be copied and pasted to a seperate file style.css and uncomment the ref below-->
+    <style>
+        
+            body {
+                background-color: #ffffff;
+                box-sizing: border-box;
+                font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+            }         
+            @media screen and (min-width: 832px) {
+                body {
+                width: 800px;
+                margin: 0 auto;
+                }
+            }
+            
+            h1 {
+                margin-bottom: -0.3em;
+                align-content: center;
+                text-align: center
+            }
+            
+            
+            h3 {
+                margin-bottom: -0.2em;
+                margin-top: 2em;
+            }
+            
+            .pageIcon {
+                height: 10em;
+                float: center;
+                margin-right: 0.5em;
+            }
+            
+            .output {
+                background-color: #f0f0f0;
+                border-radius: 0.75em;
+                display: block;
+                margin: 0.5em;
+                padding: 0.5em;
+            }
+            
+            #status {
+                margin: .5em 0;
+                font-style: italic;
+            }
+            
+            #log {
+                margin: .5em 0;
+                white-space: pre-wrap;
+            }
+            
+            #status:empty, #log:empty, #content:empty {
+                display: none;
+            }
+            
+            .buttonsdiv{
+                margin:0.5em;
+                padding:0.5em;
+                align-content: center;
+                margin-left:2px;
+                text-align: center;
+                
+            }
+
+            .button {
+                background-color: #3b3538; 
+                border: none;
+                color: rgb(255, 255, 255);
+                padding: 10px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 2px 1px;
+                cursor: pointer;
+                border-radius: 1em;
+            }
+
+            button:disabled,
+                button[disabled]{
+                border: 1px solid #999999;
+                background-color: #cccccc;
+                color: #666666;
+            }
+
+            button:hover {
+                border: 1px solid #0c3a49;
+                background-color: #1b3c42;
+                color: #ffffff;
+                padding: 10px 10px;
+            }
+
+
+            .button-stop {
+                background-color: #681d1d; 
+                border: none;
+                color: rgb(255, 255, 255);
+                padding: 10px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 2px 1px;
+                cursor: pointer;
+                border-radius: 1em;
+            }
+
+            .formdiv{
+                margin: 0.5em;
+                padding: 0.5em;
+                background-color: #c2b6b6;
+                align-content: center;
+                border-radius: 1em;
+            }
+
+            .logo{
+                display: inline-block;
+                width: 100%;
+                margin: auto;
+                align-self:auto;
+            }
+
+            .header{
+                font-size:x-large;
+                font-weight: bold;
+                margin-left:2px;
+                text-align: center;
+            }
+            
+            code {
+                font-family: Inconsolata, Consolas, monospace;
+            }
+
+            * {
+             box-sizing: border-box;
+             }
+
+             input[type=text], select, textarea {
+             width: 100%;
+             padding: 12px;
+             border: 1px solid #ccc;
+             border-radius: 4px;
+             resize: vertical;
+             }
+
+             label {
+             padding: 12px 12px 12px 0;
+             display: inline-block;
+             }
+
+             input[type=submit] {
+             background-color: #04AA6D;
+             color: white;
+             padding: 12px 20px;
+             border: none;
+             border-radius: 4px;
+             cursor: pointer;
+             float: right;
+             }
+
+             input[type=submit]:hover {
+             background-color: #45a049;
+             }
+
+             .container {
+             border-radius: 5px;
+             background-color: #f2f2f2;
+             padding: 20px;
+             }
+
+             .col-25 {
+             float:left;
+             width: 25%;
+             margin-top: 3px;
+             font-weight: bold;
+             }
+
+             .col-75 {
+             float: left;
+             width: 75%;
+             margin-top: 3px;
+             font-weight: bold;
+             }
+
+             /* Clear floats after the columns */
+             .row:after {
+             content: "";
+             display: table;
+             clear: both;
+             }
+
+             /* Responsive layout - when the screen is less than 600px wide, make the two columns stack on top of each other instead of next to each other */
+             @media screen and (max-width: 600px) {
+             .col-25, .col-75, input[type=submit] {
+                 width: 100%;
+                 margin-top: 0;
+             }
+             }
+            
+            .c { color: #999988; font-style: italic } /* Comment */
+            .err { color: #a61717; background-color: #e3d2d2 } /* Error */
+            .k { font-weight: bold } /* Keyword */
+            .o { font-weight: bold } /* Operator */
+            .cm { color: #999988; font-style: italic } /* Comment.Multiline */
+            .cp { color: #999999; font-weight: bold } /* Comment.Preproc */
+            .c1 { color: #999988; font-style: italic } /* Comment.Single */
+            .cs { color: #999999; font-weight: bold; font-style: italic } /* Comment.Special */
+            .gd { color: #000000; background-color: #ffdddd } /* Generic.Deleted */
+            .gd .x { color: #000000; background-color: #ffaaaa } /* Generic.Deleted.Specific */
+            .ge { font-style: italic } /* Generic.Emph */
+            .gr { color: #aa0000 } /* Generic.Error */
+            .gh { color: #999999 } /* Generic.Heading */
+            .gi { color: #000000; background-color: #ddffdd } /* Generic.Inserted */
+            .gi .x { color: #000000; background-color: #aaffaa } /* Generic.Inserted.Specific */
+            .go { color: #888888 } /* Generic.Output */
+            .gp { color: #555555 } /* Generic.Prompt */
+            .gs { font-weight: bold } /* Generic.Strong */
+            .gu { color: #aaaaaa } /* Generic.Subheading */
+            .gt { color: #aa0000 } /* Generic.Traceback */
+            .kc { font-weight: bold } /* Keyword.Constant */
+            .kd { font-weight: bold } /* Keyword.Declaration */
+            .kp { font-weight: bold } /* Keyword.Pseudo */
+            .kr { font-weight: bold } /* Keyword.Reserved */
+            .kt { color: #445588; font-weight: bold } /* Keyword.Type */
+            .m { color: #009999 } /* Literal.Number */
+            .s { color: #d14 } /* Literal.String */
+            .na { color: #008080 } /* Name.Attribute */
+            .nb { color: #0086B3 } /* Name.Builtin */
+            .nc { color: #445588; font-weight: bold } /* Name.Class */
+            .no { color: #008080 } /* Name.Constant */
+            .ni { color: #800080 } /* Name.Entity */
+            .ne { color: #990000; font-weight: bold } /* Name.Exception */
+            .nf { color: #990000; font-weight: bold } /* Name.Function */
+            .nn { color: #555555 } /* Name.Namespace */
+            .nt { color: #000080 } /* Name.Tag */
+            .nv { color: #008080 } /* Name.Variable */
+            .ow { font-weight: bold } /* Operator.Word */
+            .w { color: #bbbbbb } /* Text.Whitespace */
+            .mf { color: #009999 } /* Literal.Number.Float */
+            .mh { color: #009999 } /* Literal.Number.Hex */
+            .mi { color: #009999 } /* Literal.Number.Integer */
+            .mo { color: #009999 } /* Literal.Number.Oct */
+            .sb { color: #d14 } /* Literal.String.Backtick */
+            .sc { color: #d14 } /* Literal.String.Char */
+            .sd { color: #d14 } /* Literal.String.Doc */
+            .s2 { color: #d14 } /* Literal.String.Double */
+            .se { color: #d14 } /* Literal.String.Escape */
+            .sh { color: #d14 } /* Literal.String.Heredoc */
+            .si { color: #d14 } /* Literal.String.Interpol */
+            .sx { color: #d14 } /* Literal.String.Other */
+            .sr { color: #009926 } /* Literal.String.Regex */
+            .s1 { color: #d14 } /* Literal.String.Single */
+            .ss { color: #990073 } /* Literal.String.Symbol */
+            .bp { color: #999999 } /* Name.Builtin.Pseudo */
+            .vc { color: #008080 } /* Name.Variable.Class */
+            .vg { color: #008080 } /* Name.Variable.Global */
+            .vi { color: #008080 } /* Name.Variable.Instance */
+            .il { color: #009999 } /* Literal.Number.Integer.Long */
+    </style>
+    <!-- Uncomment below line if using seperate style sheet-->
+    <!-- <link rel="stylesheet" href="style.css">    -->
+    <link rel="icon" href="logo.png">  
+    
+  </head>
+
+  <body>
+
+    <div class="logo">
+        <div class ="header"> <img src="logo.png" alt="Logo"> </div>
+        <div class ="header">WiFi Setup</div>
+    </div>
+
+
+        <script>
+            window.addEventListener('DOMContentLoaded', function() {
+                const searchParams = new URL(location).searchParams;
+                const inputs = Array.from(document.querySelectorAll('input[id]'));
+
+                inputs.forEach(input => {
+                if (searchParams.has(input.id)) {
+                    if (input.type == 'checkbox') {
+                    input.checked = searchParams.get(input.id);
+                    } else {
+                    input.value = searchParams.get(input.id);
+                    input.blur();
+                    }
+                }
+                if (input.type == 'checkbox') {
+                    input.addEventListener('change', function(event) {
+                    const newSearchParams = new URL(location).searchParams;
+                    if (event.target.checked) {
+                        newSearchParams.set(input.id, event.target.checked);
+                    } else {
+                        newSearchParams.delete(input.id);
+                    }
+                    history.replaceState({}, '', Array.from(newSearchParams).length ?
+                        location.pathname + '?' + newSearchParams : location.pathname);
+                    });
+                } else {
+                    input.addEventListener('input', function(event) {
+                    const newSearchParams = new URL(location).searchParams;
+                    if (event.target.value) {
+                        newSearchParams.set(input.id, event.target.value);
+                    } else {
+                        newSearchParams.delete(input.id);
+                    }
+                    history.replaceState({}, '', Array.from(newSearchParams).length ?
+                        location.pathname + '?' + newSearchParams : location.pathname);
+                    });
+                }
+                });
+            });
+        </script>
+
+        <div class="formdiv">
+            <form>
+                <div class = "buttonsdiv">
+                    <button id="addDevice" class ="button">Add Device</button>
+                    <button id="cancel" class ="button-stop" >Cancel</button>
+                </div>
+
+                <div class="row">
+                   <div class="col-25">
+                     <label for="WifiSSID">WiFi SSID:</label>
+                   </div>
+                   <div class="col-75">
+                     <input type="text" id="WifiSSID" name="WifiSSID" placeholder="Enter Your WiFi SSID..">
+                   </div>
+                 </div>
+
+                 <div class="row">
+                   <div class="col-25">
+                     <label for="WifiPass">Wifi Password:</label>
+                   </div>
+                   <div class="col-75">
+                     <input type="text" id="WifiPass" name="WifiPass" placeholder="Your WiFi Password..">
+                   </div>
+                 </div>
+
+                <div class = "buttonsdiv"> 
+                    <button id ="connectWifi" disabled="disabled" class ="button">Connect to WiFi</button>
+                </div>
+
+            </form>
+
+
+            <h3>Status</h3>
+
+            <div id="output" class="output">
+                <div id="content"></div>
+                <div id="status"></div>
+                <pre id="log"></pre>
+            </div>
+        </div>
+
+        <script>
+            var webPage = {
+                log: function() {
+                var line = Array.prototype.slice.call(arguments).map(function(argument) {
+                    return typeof argument === 'string' ? argument : JSON.stringify(argument);
+                }).join(' ');
+
+                document.querySelector('#log').textContent += line + '\n';
+                },
+
+                clearLog: function() {
+                document.querySelector('#log').textContent = '';
+                },
+
+                setStatus: function(status) {
+                document.querySelector('#status').textContent = status;
+                },
+
+                setContent: function(newContent) {
+                var content = document.querySelector('#content');
+                while(content.hasChildNodes()) {
+                    content.removeChild(content.lastChild);
+                }
+                content.appendChild(newContent);
+                }
+            };
+        </script>
+
+        <script>
+            if (/Chrome\/(\d+\.\d+.\d+.\d+)/.test(navigator.userAgent)){
+                // Let's log a warning if the sample is not supposed to execute on this
+                // version of Chrome.
+                if (55 > parseInt(RegExp.$1)) {
+                webPage.setStatus('Warning! Keep in mind this sample has been tested with Chrome ' + 55 + '.');
+                }
+            }
+        </script>
+
+        <script>
+            var wifiSsidCharacteristic;
+            var wifiPassCharacteristic;
+
+            
+            async function onAddDeviceButtonClick() {
+                let serviceUuid = "5c1b9a0d-b5be-4a40-8f7a-66b36d0a5176"; // Use the same service UUID used in the Particle Argon firmware
+                if (serviceUuid.startsWith('0x')) {
+                    serviceUuid = parseInt(serviceUuid);
+                }
+
+                let wifiSsidUuid = "fdcf0006-3fed-4ed2-84e6-04bbb9ae04d4"; // Use the same characteristic WiFi SSID UUID used in the Particle Argon firmware
+                if (wifiSsidUuid.startsWith('0x')) {
+                    wifiSsidUuid = parseInt(wifiSsidUuid);
+                }
+                let wifiPassUuid = "fdcf0007-3fed-4ed2-84e6-04bbb9ae04d4"; // Use the same characteristic WiFi password UUID used in the Particle Argon firmware
+                if (wifiPassUuid.startsWith('0x')) {
+                    wifiPassUuid = parseInt(wifiPassUuid);
+                }
+
+                try {
+                    log('Requesting Bluetooth Device...');
+                    const device = await navigator.bluetooth.requestDevice({
+                        filters: [{services: [serviceUuid]}]});
+
+                    log('Connecting to GATT Server...');
+                    const server = await device.gatt.connect();
+
+                    log('Getting Service...');
+                    const service = await server.getPrimaryService(serviceUuid);
+
+                    log('Getting Characteristic...');
+                    wifiSsidCharacteristic = await service.getCharacteristic(wifiSsidUuid);
+                    wifiPassCharacteristic = await service.getCharacteristic(wifiPassUuid);
+                    document.getElementById("connectWifi").disabled = false;    
+                                
+                    log('> Device connected and ready');
+                    wifiSsidCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                    wifiPassCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+                } catch(error) {
+                    log('Argh! ' + error);
+                }
+            }
+
+            async function onConnectWifiClick() {
+                if (!("TextEncoder" in window)) 
+                alert("Sorry, this browser does not support TextEncoder...");
+            
+                var enc = new TextEncoder(); // always utf-8
+
+                try {
+                    let wifissidvalue = document.querySelector('#WifiSSID').value;
+                    await wifiSsidCharacteristic.writeValueWithoutResponse(enc.encode(wifissidvalue));
+                    log('> Setting Wifi SSID...');
+
+
+                    let wifipassvalue = document.querySelector('#WifiPass').value;
+                    await wifiPassCharacteristic.writeValueWithoutResponse(enc.encode(wifipassvalue));
+                    log('> Setting Wifi Password...');
+
+                    log('> Done.')
+
+                    
+                } catch(error) {
+                    log('Argh! ' + error);
+                }
+            }
+
+            async function onCancelClick() {
+                if (wifiSsidCharacteristic) {
+                    try {
+                    await wifiSsidCharacteristic.stopNotifications();
+                    log('> Cancelled');
+                    myCharacteristic.removeEventListener('characteristicvaluechanged',
+                        handleNotifications);
+                    } catch(error) {
+                    log('Argh! ' + error);
+                    }
+                }
+            }
+
+            function handleNotifications(event) {
+                let value = event.target.value;
+                let a = [];
+                // Convert raw data bytes to hex values just for the sake of showing something.
+                // In the "real" world, you'd use data.getUint8, data.getUint16 or even
+                // TextDecoder to process raw data bytes.
+                for (let i = 0; i < value.byteLength; i++) {
+                    a.push('0x' + ('00' + value.getUint8(i).toString(16)).slice(-2));
+                }
+                log('> ' + a.join(' '));
+            }
+        </script>
+
+        <script>
+
+            document.querySelector('#addDevice').addEventListener('click', function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+
+                if (isWebBluetoothEnabled()) {
+                webPage.clearLog();
+                onAddDeviceButtonClick();
+                }
+            });
+
+            document.querySelector('#cancel').addEventListener('click', function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+
+                if (isWebBluetoothEnabled()) {
+                onCancelClick();
+                }
+            });
+
+            document.querySelector('#connectWifi').addEventListener('click', function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+
+                if (isWebBluetoothEnabled()) {
+                onConnectWifiClick();
+                }
+            });
+
+
+        </script>
+
+        <script>
+
+            log = webPage.log;
+
+            function isWebBluetoothEnabled() {
+                if (navigator.bluetooth) {
+                return true;
+                } else {
+                webPage.setStatus('Web Bluetooth API is not available.\n' +
+                    'Please make sure the "Experimental Web Platform features" flag is enabled.');
+                return false;
+                }
+            }
+        </script>
+         
+
+  </body>
+</html>
