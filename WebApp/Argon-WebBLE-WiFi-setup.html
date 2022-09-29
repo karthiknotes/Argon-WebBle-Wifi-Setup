@@ -385,6 +385,14 @@ https://github.com/googlechrome/samples/tree/gh-pages/web-bluetooth
                     <button id ="connectWifi" disabled="disabled" class ="button">Connect to WiFi</button>
                 </div>
 
+                <div class = "buttonsdiv"> 
+                    <button id ="left" disabled="disabled" class ="button">Left</button>
+                </div>
+
+                <div class = "buttonsdiv"> 
+                    <button id ="right" disabled="disabled" class ="button">Right</button>
+                </div>
+
             </form>
 
 
@@ -438,6 +446,7 @@ https://github.com/googlechrome/samples/tree/gh-pages/web-bluetooth
         <script>
             var wifiSsidCharacteristic;
             var wifiPassCharacteristic;
+            var directionCharacteristic;
 
             
             async function onAddDeviceButtonClick() {
@@ -454,6 +463,10 @@ https://github.com/googlechrome/samples/tree/gh-pages/web-bluetooth
                 if (wifiPassUuid.startsWith('0x')) {
                     wifiPassUuid = parseInt(wifiPassUuid);
                 }
+                let directionUuid = "fdcf0004-3fed-4ed2-84e6-04bbb9ae04d4"; // Use the same characteristic WiFi password UUID used in the Particle Argon firmware
+                if (directionUuid.startsWith('0x')) {
+                    directionUuid = parseInt(directionUuid);
+                }
 
                 try {
                     log('Requesting Bluetooth Device...');
@@ -469,11 +482,15 @@ https://github.com/googlechrome/samples/tree/gh-pages/web-bluetooth
                     log('Getting Characteristic...');
                     wifiSsidCharacteristic = await service.getCharacteristic(wifiSsidUuid);
                     wifiPassCharacteristic = await service.getCharacteristic(wifiPassUuid);
-                    document.getElementById("connectWifi").disabled = false;    
+                    directionCharacteristic = await service.getCharacteristic(directionUuid);
+                    document.getElementById("connectWifi").disabled = false;
+                    document.getElementById("left").disabled = false; 
+                    document.getElementById("right").disabled = false;     
                                 
                     log('> Device connected and ready');
                     wifiSsidCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
                     wifiPassCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                    directionCharacteristic.addEventListener('characteristicvaluechanged',handleNotifications);
 
                 } catch(error) {
                     log('Argh! ' + error);
@@ -503,6 +520,60 @@ https://github.com/googlechrome/samples/tree/gh-pages/web-bluetooth
                     log('Argh! ' + error);
                 }
             }
+
+            async function onLeftClick() {
+                if (!("TextEncoder" in window)) 
+                alert("Sorry, this browser does not support TextEncoder...");
+            
+                var enc = new TextEncoder(); // always utf-8
+
+                try {
+                    let wifissidvalue = document.querySelector('#WifiSSID').value;
+                    //let directionvalue = "1";
+                    //await wifiSsidCharacteristic.writeValueWithoutResponse(enc.encode(wifissidvalue));
+                    await directionCharacteristic.writeValueWithoutResponse((enc.encode(wifissidvalue)));
+                    //log('> Setting Wifi SSID...');
+
+
+                    //let wifipassvalue = document.querySelector('#WifiPass').value;
+                    //await wifiPassCharacteristic.writeValueWithoutResponse(enc.encode(wifipassvalue));
+                    log('<<< Moving left...');
+
+                    //log('> Done.')
+
+                    
+                } catch(error) {
+                    log('Argh! ' + error);
+                }
+            }
+
+            
+            async function onRightClick() {
+                if (!("TextEncoder" in window)) 
+                alert("Sorry, this browser does not support TextEncoder...");
+            
+                var enc = new TextEncoder(); // always utf-8
+
+                try {
+                    let wifipassvalue = document.querySelector('#WifiPass').value;;
+                    //let directionvalue = "0";
+                    //await wifiSsidCharacteristic.writeValueWithoutResponse(enc.encode(wifissidvalue));
+                    await directionCharacteristic.writeValueWithoutResponse(enc.encode(wifipassvalue));
+                    //log('> Setting Wifi SSID...');
+
+
+                    //l
+                    //await wifiPassCharacteristic.writeValueWithoutResponse(enc.encode(wifipassvalue));
+                    log('>>> Moving Right...');
+
+                    //log('> Done.')
+
+                    
+                } catch(error) {
+                    log('Argh! ' + error);
+                }
+            }
+
 
             async function onCancelClick() {
                 if (wifiSsidCharacteristic) {
@@ -560,8 +631,40 @@ https://github.com/googlechrome/samples/tree/gh-pages/web-bluetooth
                 }
             });
 
+            document.querySelector('#left').addEventListener('click', function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+
+                if (isWebBluetoothEnabled()) {
+                onLeftClick();
+                }
+            });
+
+            document.querySelector('#right').addEventListener('click', function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+
+                if (isWebBluetoothEnabled()) {
+                onRightClick();
+                }
+            });
+
+
 
         </script>
+
+         document.querySelector('#connectWifi').addEventListener('click', function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+
+                if (isWebBluetoothEnabled()) {
+                onConnectWifiClick();
+                }
+            });
+
+
+        </script>
+
 
         <script>
 
